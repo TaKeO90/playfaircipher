@@ -13,6 +13,8 @@ type PfMatrix struct {
 	Keyword string
 	Matrix  [][]string
 	enOrdec string
+	encrypt bool
+	decrypt bool
 }
 
 //AUXILIARY FUNCTIONS //
@@ -78,11 +80,44 @@ func fillTheKeyword(keyword string, matrix *[][]string) {
 	}
 }
 
+func isReplicated(str *[]string, fL *string) {
+	if len(*str) == 2 {
+		cmp := string((*str)[0])
+		if string((*str)[1]) == cmp {
+			tmp := []string{}
+			tmp = append(tmp, cmp)
+			ns := strings.Replace(string((*str)[1]), string((*str)[1]), "X", 1)
+			tmp = append(tmp, ns)
+			*str = tmp
+			*fL = string((*str)[0])
+		}
+	}
+}
+
+func wordToPairs(word string) (wList [][]string) {
+	var str []string
+	var fL string
+	for _, w := range word {
+		if fL != "" {
+			str = append(str, fL, string(w))
+			fL = ""
+		} else {
+			str = append(str, string(w))
+		}
+		if len(str) == 2 {
+			isReplicated(&str, &fL)
+			wList = append(wList, str)
+			str = []string{}
+		}
+	}
+	return
+}
+
 ///////
 
-func NewMtx(keyword string) (pf *PfMatrix) {
+func NewMtx(keyword string, word string, encr, decr bool) (pf *PfMatrix) {
 	mtx := [][]string{}
-	pf = &PfMatrix{keyword, mtx, ""}
+	pf = &PfMatrix{keyword, mtx, word, encr, decr}
 	return
 }
 
@@ -97,4 +132,16 @@ func (p *PfMatrix) GenMatrix() [][]string {
 	}
 	fillInTheBlank(index, check, strings.ToUpper(p.Keyword), &p.Matrix)
 	return p.Matrix
+}
+
+func (p *PfMatrix) EncOrDec() (endword [][]string) {
+	//Check if p.encrypt or p.decrypt
+	if p.encrypt {
+		// encrypt the word
+		endword = wordToPairs(p.enOrdec)
+	} else if p.decrypt {
+		// decrypt the word
+		endword = [][]string{}
+	}
+	return
 }
