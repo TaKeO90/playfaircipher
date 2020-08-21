@@ -4,9 +4,11 @@ import (
 	"strings"
 )
 
+//TODO: should handle when LETTER J when encrypting
+
 const (
 	MATRIXROWLEN int    = 5
-	LETTERS      string = "ABCDEFJHIJKLMNOPQRSTUVWXYZ"
+	LETTERS      string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
 type PfMatrix struct {
@@ -29,6 +31,9 @@ func checkKwLetters(keyword string) map[string]bool {
 	for _, k := range keyword {
 		m[string(k)] = true
 	}
+	if !m["J"] {
+		m["J"] = true
+	}
 	return m
 }
 
@@ -45,11 +50,17 @@ func fillTheMatrix(s *[]string, matrix *[][]string, letterIndex int, letter stri
 	if len(*s) == MATRIXROWLEN {
 		(*matrix) = append((*matrix), (*s))
 		*s = []string{}
-	} //else if letterIndex == len(LETTERS)-1 {
+	} //else if len(*matrix) == MATRIXROWLEN-1 && len(*s) == MATRIXROWLEN-1 {
+	//	(*matrix) = append((*matrix), (*s))
+	//	*s = []string{}
+	//}
+	//else if letterIndex == len(LETTERS)-1 {
 	//		(*matrix)[len((*matrix))-1] = append((*matrix)[len((*matrix))-1], letter)
 	//	}
 	//NOTE we need to skip letter j or i and give them the same index
 }
+
+var JIndex int
 
 func fillInTheBlank(index int, check bool, keyword string, matrix *[][]string) {
 	m := checkKwLetters(keyword)
@@ -64,6 +75,9 @@ func fillInTheBlank(index int, check bool, keyword string, matrix *[][]string) {
 				}
 				if !passed[string(letter)] {
 					s = append(s, string(letter))
+				}
+				if string(letter) == "I" {
+					JIndex = letterIndex
 				}
 				fillTheMatrix(&s, matrix, letterIndex, string(letter))
 			} else {
@@ -185,12 +199,14 @@ func NewRows(matrix [][]string) matrixRows {
 func (m matrixRows) shiftToRight(rowIndex, ind1, ind2 int, result *string) {
 	if ind1 == len(m[rowIndex].row[rowIndex])-1 {
 		ind1 = 0
-	} else if ind2 == len(m[rowIndex].row[rowIndex])-1 {
+	}
+	if ind2 == len(m[rowIndex].row[rowIndex])-1 {
 		ind2 = 0
 	}
 	if ind1 != len(m[rowIndex].row[rowIndex])-1 {
 		ind1++
-	} else if ind2 != len(m[rowIndex].row[rowIndex])-1 {
+	}
+	if ind2 != len(m[rowIndex].row[rowIndex])-1 {
 		ind2++
 	}
 	*result += m[rowIndex].row[rowIndex][ind1]
@@ -200,21 +216,28 @@ func (m matrixRows) shiftToRight(rowIndex, ind1, ind2 int, result *string) {
 func (m matrixRows) shiftToBottom(fstRowIndex, sndRowIndex, index int, result *string) {
 	if fstRowIndex == len(m)-1 {
 		fstRowIndex = 0
-	} else if sndRowIndex == len(m)-1 {
+	}
+	if sndRowIndex == len(m)-1 {
 		sndRowIndex = 0
 	}
 	if fstRowIndex != len(m)-1 {
 		fstRowIndex++
-	} else if sndRowIndex != len(m)-1 {
+	}
+	if sndRowIndex != len(m)-1 {
 		sndRowIndex++
 	}
-	*result += m[fstRowIndex].row[fstRowIndex][index]
 	*result += m[sndRowIndex].row[sndRowIndex][index]
+	*result += m[fstRowIndex].row[fstRowIndex][index]
 }
 
 func (m matrixRows) getIntersection(fstRowIndex, sndRowIndex, indx1, indx2 int, result *string) {
-	*result += m[fstRowIndex].row[fstRowIndex][indx2]
-	*result += m[sndRowIndex].row[sndRowIndex][indx1]
+	if indx1 < indx2 && fstRowIndex < sndRowIndex {
+		*result += m[fstRowIndex].row[fstRowIndex][indx2]
+		*result += m[sndRowIndex].row[sndRowIndex][indx1]
+	} else {
+		*result += m[sndRowIndex].row[sndRowIndex][indx1]
+		*result += m[fstRowIndex].row[fstRowIndex][indx2]
+	}
 }
 
 func (p *PfMatrix) GenMatrix() [][]string {
