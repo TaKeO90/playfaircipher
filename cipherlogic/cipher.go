@@ -5,10 +5,14 @@ import (
 )
 
 const (
-	MATRIXROWLEN int    = 5
-	LETTERS      string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	//MATRIXROWLEN the length of the matrix and the it's rows and columns
+	MATRIXROWLEN int = 5
+	//LETTERS the alphabet letters that we use for encrypting
+	LETTERS string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
+//PfMatrix holds elements that we need for the encryption or decryption
+// or can help us figure out what the user need `encrypt or decrypt`
 type PfMatrix struct {
 	Keyword string
 	Matrix  [][]string
@@ -187,13 +191,14 @@ func analyseAndEncrypt(i, j, x, y int, mRows matrixRows, result *string) {
 
 ///////
 
+//NewMtx get the element we need for PfMatrix type
 func NewMtx(keyword string, word string, encr, decr bool) (pf *PfMatrix) {
 	mtx := [][]string{}
 	pf = &PfMatrix{keyword, mtx, strings.ToUpper(word), encr, decr}
 	return
 }
 
-func NewRows(matrix [][]string) matrixRows {
+func newRows(matrix [][]string) matrixRows {
 	var mRows matrixRows
 	mtx := new(matrixR)
 	for i, r := range matrix {
@@ -244,6 +249,7 @@ func (m matrixRows) getIntersection(fstRowIndex, sndRowIndex, indx1, indx2 int, 
 	*result += m[sndRowIndex].row[sndRowIndex][indx1]
 }
 
+//GenMatrix generate the matrix base on the user keyword
 func (p *PfMatrix) GenMatrix() [][]string {
 	var check bool
 	fillTheKeyword(strings.ToUpper(p.Keyword), &p.Matrix)
@@ -257,11 +263,12 @@ func (p *PfMatrix) GenMatrix() [][]string {
 	return p.Matrix
 }
 
+//EncOrDec encrypt or decrpyt user's word
 func (p *PfMatrix) EncOrDec() (result string) {
 	//Check if p.encrypt or p.decrypt
 	if p.encrypt {
 		// encrypt the word
-		mRows := NewRows(p.Matrix)
+		mRows := newRows(p.Matrix)
 		endword := wordToPairs(p.enOrdec)
 		for _, n := range endword {
 			fstRI, sndRI, index1, index2 := findAndReport(n, p.Matrix)
