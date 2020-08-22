@@ -5,11 +5,11 @@ import (
 	"fmt"
 )
 
-//TODO: i should skip letter j and give it the same index as i
+//TODO: set up flags for the program
 
 func main() {
 	keyword := "monarchy"
-	pf := cipherlogic.NewMtx(keyword, "BALLOON", true, false)
+	pf := cipherlogic.NewMtx(keyword, "hello", true, false)
 	matrix := pf.GenMatrix()
 	fmt.Println(matrix)
 	wl := pf.EncOrDec()

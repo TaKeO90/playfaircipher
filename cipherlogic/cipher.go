@@ -4,8 +4,6 @@ import (
 	"strings"
 )
 
-//TODO: should handle when LETTER J when encrypting
-
 const (
 	MATRIXROWLEN int    = 5
 	LETTERS      string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -50,17 +48,8 @@ func fillTheMatrix(s *[]string, matrix *[][]string, letterIndex int, letter stri
 	if len(*s) == MATRIXROWLEN {
 		(*matrix) = append((*matrix), (*s))
 		*s = []string{}
-	} //else if len(*matrix) == MATRIXROWLEN-1 && len(*s) == MATRIXROWLEN-1 {
-	//	(*matrix) = append((*matrix), (*s))
-	//	*s = []string{}
-	//}
-	//else if letterIndex == len(LETTERS)-1 {
-	//		(*matrix)[len((*matrix))-1] = append((*matrix)[len((*matrix))-1], letter)
-	//	}
-	//NOTE we need to skip letter j or i and give them the same index
+	}
 }
-
-var JIndex int
 
 func fillInTheBlank(index int, check bool, keyword string, matrix *[][]string) {
 	m := checkKwLetters(keyword)
@@ -75,9 +64,6 @@ func fillInTheBlank(index int, check bool, keyword string, matrix *[][]string) {
 				}
 				if !passed[string(letter)] {
 					s = append(s, string(letter))
-				}
-				if string(letter) == "I" {
-					JIndex = letterIndex
 				}
 				fillTheMatrix(&s, matrix, letterIndex, string(letter))
 			} else {
@@ -118,7 +104,7 @@ func isReplicated(str *[]string, fL *string) {
 func wordToPairs(word string) (wList [][]string) {
 	var str []string
 	var fL string
-	for _, w := range word {
+	for i, w := range word {
 		if fL != "" {
 			str = append(str, fL, string(w))
 			fL = ""
@@ -129,6 +115,11 @@ func wordToPairs(word string) (wList [][]string) {
 			isReplicated(&str, &fL)
 			wList = append(wList, str)
 			str = []string{}
+		} else if i == len(word)-1 && len(str) != 2 {
+			tmp := str[0]
+			str[0] = "X"
+			str = append(str, tmp)
+			wList = append(wList, str)
 		}
 	}
 	return
@@ -147,26 +138,44 @@ func isIn(w1, w2 string, list []string) (indx1, indx2 int, found1, found2 bool) 
 	return
 }
 
-func findAndReport(pair []string, matrix [][]string) ([]int, []int) {
-	var res []int
-	var rowIndex []int
+func getletterIndex(letter string, matrix [][]string) (rowIndex, index int) {
+	for i, r := range matrix {
+		for j, l := range r {
+			if l == letter {
+				rowIndex = i
+				index = j
+			}
+		}
+	}
+	return
+}
+
+func findAndReport(pair []string, matrix [][]string) (fstRowIndex, sndRowIndex int, indx1, indx2 int) {
+	//var res []int
+	//var rowIndex []int
 	for b, w := range matrix {
 		index1, index2, found1, found2 := isIn(pair[0], pair[1], w)
 		if found1 {
-			res = append(res, index1)
-			rowIndex = append(rowIndex, b)
+			indx1 = index1
+			fstRowIndex = b
+		} else if !found1 && pair[0] == "J" {
+			x, y := getletterIndex("I", matrix)
+			indx1 = y
+			fstRowIndex = x
 		}
 		if found2 {
-			res = append(res, index2)
-			rowIndex = append(rowIndex, b)
+			indx2 = index2
+			sndRowIndex = b
+		} else if !found2 && pair[1] == "J" {
+			x, y := getletterIndex("I", matrix)
+			indx2 = y
+			sndRowIndex = x
 		}
 	}
-	return rowIndex, res
+	return
 }
 
-func analyseAndEncrypt(rowIndex, indexs []int, mRows matrixRows, result *string) {
-	i, j := rowIndex[0], rowIndex[1]
-	x, y := indexs[0], indexs[1]
+func analyseAndEncrypt(i, j, x, y int, mRows matrixRows, result *string) {
 	if i == j && x != y {
 		mRows.shiftToRight(i, x, y, result)
 	} else if i != j && x == y {
@@ -180,7 +189,7 @@ func analyseAndEncrypt(rowIndex, indexs []int, mRows matrixRows, result *string)
 
 func NewMtx(keyword string, word string, encr, decr bool) (pf *PfMatrix) {
 	mtx := [][]string{}
-	pf = &PfMatrix{keyword, mtx, word, encr, decr}
+	pf = &PfMatrix{keyword, mtx, strings.ToUpper(word), encr, decr}
 	return
 }
 
@@ -203,10 +212,10 @@ func (m matrixRows) shiftToRight(rowIndex, ind1, ind2 int, result *string) {
 	if ind2 == len(m[rowIndex].row[rowIndex])-1 {
 		ind2 = 0
 	}
-	if ind1 != len(m[rowIndex].row[rowIndex])-1 {
+	if ind1 < len(m[rowIndex].row[rowIndex])-1 {
 		ind1++
 	}
-	if ind2 != len(m[rowIndex].row[rowIndex])-1 {
+	if ind2 < len(m[rowIndex].row[rowIndex])-1 {
 		ind2++
 	}
 	*result += m[rowIndex].row[rowIndex][ind1]
@@ -220,24 +229,19 @@ func (m matrixRows) shiftToBottom(fstRowIndex, sndRowIndex, index int, result *s
 	if sndRowIndex == len(m)-1 {
 		sndRowIndex = 0
 	}
-	if fstRowIndex != len(m)-1 {
+	if fstRowIndex < len(m)-1 {
 		fstRowIndex++
 	}
-	if sndRowIndex != len(m)-1 {
+	if sndRowIndex < len(m)-1 {
 		sndRowIndex++
 	}
-	*result += m[sndRowIndex].row[sndRowIndex][index]
 	*result += m[fstRowIndex].row[fstRowIndex][index]
+	*result += m[sndRowIndex].row[sndRowIndex][index]
 }
 
 func (m matrixRows) getIntersection(fstRowIndex, sndRowIndex, indx1, indx2 int, result *string) {
-	if indx1 < indx2 && fstRowIndex < sndRowIndex {
-		*result += m[fstRowIndex].row[fstRowIndex][indx2]
-		*result += m[sndRowIndex].row[sndRowIndex][indx1]
-	} else {
-		*result += m[sndRowIndex].row[sndRowIndex][indx1]
-		*result += m[fstRowIndex].row[fstRowIndex][indx2]
-	}
+	*result += m[fstRowIndex].row[fstRowIndex][indx2]
+	*result += m[sndRowIndex].row[sndRowIndex][indx1]
 }
 
 func (p *PfMatrix) GenMatrix() [][]string {
@@ -260,8 +264,8 @@ func (p *PfMatrix) EncOrDec() (result string) {
 		mRows := NewRows(p.Matrix)
 		endword := wordToPairs(p.enOrdec)
 		for _, n := range endword {
-			rowIndex, indexs := findAndReport(n, p.Matrix)
-			analyseAndEncrypt(rowIndex, indexs, mRows, &result)
+			fstRI, sndRI, index1, index2 := findAndReport(n, p.Matrix)
+			analyseAndEncrypt(fstRI, sndRI, index1, index2, mRows, &result)
 		}
 	} else if p.decrypt {
 		// decrypt the word
