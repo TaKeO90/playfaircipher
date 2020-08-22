@@ -3,12 +3,10 @@
  * WARNING the program still under devlopement it's not finished yet see ROADMAP
 
 
-
-
-
 # ROAD MAP
 
-- [X] GENERATE MATRIX WITH THE KEYWORD AND ALPHABET LETTERS ON IT
-- [X] SPLIT THE WORD THAT WE NEED TO ENCRYPT INTO PAIRS
-- [ ] BE ABLE TO GET THE WORD THAT THE USER WANT TO ENCRYPT AND ENCRPYT IT 
-- [ ] BE ABLE TO DECPRYPT AN ENCRYPTED WORD WITH playfail cipher
+- [X] generate matrix with the keyword and alphabet letters on it
+- [X] split the word that we need to encrypt into pairs
+- [X] be able to get the word that the user want to encrypt and encrpyt it 
+- [ ] setup flags for the program to get user input for cli
+- [ ] be able to decprypt an encrypted word with playfail cipher
