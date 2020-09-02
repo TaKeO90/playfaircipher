@@ -27,11 +27,13 @@ func main() {
 	if keyword != "" && word != "" && encrypt && !decrypt {
 		pf := cipherlogic.NewMtx(keyword, word, encrypt, decrypt)
 		pf.GenMatrix()
+		fmt.Println(pf.Matrix)
 		result := pf.EncOrDec()
 		fmt.Println(result)
 	} else if keyword != "" && word != "" && decrypt && !encrypt {
 		pf := cipherlogic.NewMtx(keyword, word, encrypt, decrypt)
 		pf.GenMatrix()
+		fmt.Println(pf.Matrix)
 		result := pf.EncOrDec()
 		fmt.Println(result)
 	} else {
