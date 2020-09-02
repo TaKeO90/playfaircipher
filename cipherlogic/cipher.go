@@ -8,8 +8,11 @@ const (
 	//MATRIXROWLEN the length of the matrix and the it's rows and columns
 	MATRIXROWLEN int = 5
 	//LETTERS the alphabet letters that we use for encrypting
-	LETTERS string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	LETTERS     string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	PLACEHOLDER        = "X"
 )
+
+var endSpecialWords []string
 
 //PfMatrix holds elements that we need for the encryption or decryption
 // or can help us figure out what the user need `encrypt or decrypt`
@@ -28,6 +31,7 @@ type matrixR struct {
 type matrixRows []matrixR
 
 //AUXILIARY FUNCTIONS //
+//checkKwLetters takes all the keyword letter and put them into a map[string]bool and give for each letter true
 func checkKwLetters(keyword string) map[string]bool {
 	m := make(map[string]bool)
 	for _, k := range keyword {
@@ -39,6 +43,7 @@ func checkKwLetters(keyword string) map[string]bool {
 	return m
 }
 
+//checkEmptySpace iterate each row in the matrix and check the length of each one if it's 5 or No.
 func checkEmptySpace(matrix [][]string) (arr []string, index int) {
 	for i, j := range matrix {
 		if len(j) != MATRIXROWLEN {
@@ -48,6 +53,7 @@ func checkEmptySpace(matrix [][]string) (arr []string, index int) {
 	return
 }
 
+// fillTheMatrix fill in the matrix with letters
 func fillTheMatrix(s *[]string, matrix *[][]string, letterIndex int, letter string) {
 	if len(*s) == MATRIXROWLEN {
 		(*matrix) = append((*matrix), (*s))
@@ -80,8 +86,13 @@ func fillInTheBlank(index int, check bool, keyword string, matrix *[][]string) {
 
 func fillTheKeyword(keyword string, matrix *[][]string) {
 	tmp := []string{}
+	//HERE WE NEED TO CHECK IF THE LETTER WE PUT INTO THE MATRIX IS ALREADY THERE OR NOT.
+	passedL := make(map[string]bool)
 	for i, n := range keyword {
-		tmp = append(tmp, string(n))
+		if !passedL[string(n)] {
+			tmp = append(tmp, string(n))
+		}
+		passedL[string(n)] = true
 		if len(tmp) == MATRIXROWLEN {
 			(*matrix) = append((*matrix), tmp)
 			tmp = []string{}
@@ -97,7 +108,7 @@ func isReplicated(str *[]string, fL *string) {
 		if string((*str)[1]) == cmp {
 			tmp := []string{}
 			tmp = append(tmp, cmp)
-			ns := strings.Replace(string((*str)[1]), string((*str)[1]), "X", 1)
+			ns := strings.Replace(string((*str)[1]), string((*str)[1]), PLACEHOLDER, 1)
 			tmp = append(tmp, ns)
 			*str = tmp
 			*fL = string((*str)[0])
@@ -121,9 +132,13 @@ func wordToPairs(word string) (wList [][]string) {
 			str = []string{}
 		} else if i == len(word)-1 && len(str) != 2 {
 			tmp := str[0]
-			str[0] = "X"
+			str[0] = PLACEHOLDER
 			str = append(str, tmp)
 			wList = append(wList, str)
+		}
+		if i == len(word)-1 && wList[len(wList)-1][0] == fL && wList[len(wList)-1][1] == PLACEHOLDER {
+			endSpecialWords = append(endSpecialWords, PLACEHOLDER, fL) //instead of bool we need to get index then give it to the get intersection function.
+			wList = append(wList, []string{PLACEHOLDER, fL})
 		}
 	}
 	return
@@ -179,14 +194,34 @@ func findAndReport(pair []string, matrix [][]string) (fstRowIndex, sndRowIndex i
 	return
 }
 
-func analyseAndEncrypt(i, j, x, y int, mRows matrixRows, result *string) {
+func analyseAndEncrypt(i, j, x, y int, mRows matrixRows, matrix [][]string, result *string) {
 	if i == j && x != y {
 		mRows.shiftToRight(i, x, y, result)
 	} else if i != j && x == y {
 		mRows.shiftToBottom(i, j, x, result)
 	} else if i != j && x != y {
-		mRows.getIntersection(i, j, x, y, result)
+		mRows.getIntersection(matrix, i, j, x, y, result)
 	}
+}
+
+// check if the word or the keyword contains space in the middle
+// then edit the word or the keyword and remove that space
+func checkWordKw(w string) (ok bool) {
+	if strings.Contains(strings.TrimSpace(w), " ") {
+		ok = true
+	} else {
+		ok = false
+	}
+	return
+}
+
+func editWordKw(w *string) {
+	var tmp string
+	sw := strings.Fields(*w)
+	for _, n := range sw {
+		tmp += n
+	}
+	*w = tmp
 }
 
 ///////
@@ -194,6 +229,13 @@ func analyseAndEncrypt(i, j, x, y int, mRows matrixRows, result *string) {
 //NewMtx get the element we need for PfMatrix type
 func NewMtx(keyword string, word string, encr, decr bool) (pf *PfMatrix) {
 	mtx := [][]string{}
+	// HERE WE NEED TO CHECK IF THE WORD OR THE KEYWORD HAVE SPACES IN THE MIDDLE OF THEM
+	if checkWordKw(word) {
+		editWordKw(&word)
+	}
+	if checkWordKw(keyword) {
+		editWordKw(&keyword)
+	}
 	pf = &PfMatrix{keyword, mtx, strings.ToUpper(word), encr, decr}
 	return
 }
@@ -213,14 +255,12 @@ func newRows(matrix [][]string) matrixRows {
 func (m matrixRows) shiftToRight(rowIndex, ind1, ind2 int, result *string) {
 	if ind1 == len(m[rowIndex].row[rowIndex])-1 {
 		ind1 = 0
+	} else if ind1 < len(m[rowIndex].row[rowIndex])-1 {
+		ind1++
 	}
 	if ind2 == len(m[rowIndex].row[rowIndex])-1 {
 		ind2 = 0
-	}
-	if ind1 < len(m[rowIndex].row[rowIndex])-1 {
-		ind1++
-	}
-	if ind2 < len(m[rowIndex].row[rowIndex])-1 {
+	} else if ind2 < len(m[rowIndex].row[rowIndex])-1 {
 		ind2++
 	}
 	*result += m[rowIndex].row[rowIndex][ind1]
@@ -230,27 +270,43 @@ func (m matrixRows) shiftToRight(rowIndex, ind1, ind2 int, result *string) {
 func (m matrixRows) shiftToBottom(fstRowIndex, sndRowIndex, index int, result *string) {
 	if fstRowIndex == len(m)-1 {
 		fstRowIndex = 0
+	} else if fstRowIndex < len(m)-1 {
+		fstRowIndex++
 	}
 	if sndRowIndex == len(m)-1 {
 		sndRowIndex = 0
-	}
-	if fstRowIndex < len(m)-1 {
-		fstRowIndex++
-	}
-	if sndRowIndex < len(m)-1 {
+	} else if sndRowIndex < len(m)-1 {
 		sndRowIndex++
 	}
 	*result += m[fstRowIndex].row[fstRowIndex][index]
 	*result += m[sndRowIndex].row[sndRowIndex][index]
 }
 
-func (m matrixRows) getIntersection(fstRowIndex, sndRowIndex, indx1, indx2 int, result *string) {
-	*result += m[fstRowIndex].row[fstRowIndex][indx2]
-	*result += m[sndRowIndex].row[sndRowIndex][indx1]
+func (m matrixRows) getIntersection(matrix [][]string, fstRowIndex, sndRowIndex, indx1, indx2 int, result *string) {
+	//	if placeholderB {
+	//		*result += m[sndRowIndex].row[sndRowIndex][indx1]
+	//		*result += m[fstRowIndex].row[fstRowIndex][indx2]
+	//		placeholderB = false
+	//	} else { 	findAndReport(pair []string, matrix [][]string) (fstRowIndex, sndRowIndex int, indx1, indx2 int)
+	if len(endSpecialWords) == 0 {
+		*result += m[fstRowIndex].row[fstRowIndex][indx2]
+		*result += m[sndRowIndex].row[sndRowIndex][indx1]
+	} else if len(endSpecialWords) == 2 {
+		specRI1, specI1 := getletterIndex(endSpecialWords[0], matrix)
+		specRI2, specI2 := getletterIndex(endSpecialWords[1], matrix)
+		if specRI1 == fstRowIndex && specI1 == indx1 && specRI2 == sndRowIndex && specI2 == indx2 {
+			*result += m[sndRowIndex].row[sndRowIndex][indx1]
+			*result += m[fstRowIndex].row[fstRowIndex][indx2]
+			endSpecialWords = endSpecialWords[:0]
+		} else {
+			*result += m[fstRowIndex].row[fstRowIndex][indx2]
+			*result += m[sndRowIndex].row[sndRowIndex][indx1]
+		}
+	}
 }
 
 //GenMatrix generate the matrix base on the user keyword
-func (p *PfMatrix) GenMatrix() [][]string {
+func (p *PfMatrix) GenMatrix() {
 	var check bool
 	fillTheKeyword(strings.ToUpper(p.Keyword), &p.Matrix)
 	arr, index := checkEmptySpace(p.Matrix)
@@ -260,7 +316,6 @@ func (p *PfMatrix) GenMatrix() [][]string {
 		check = false
 	}
 	fillInTheBlank(index, check, strings.ToUpper(p.Keyword), &p.Matrix)
-	return p.Matrix
 }
 
 //EncOrDec encrypt or decrpyt user's word
@@ -272,7 +327,7 @@ func (p *PfMatrix) EncOrDec() (result string) {
 		endword := wordToPairs(p.enOrdec)
 		for _, n := range endword {
 			fstRI, sndRI, index1, index2 := findAndReport(n, p.Matrix)
-			analyseAndEncrypt(fstRI, sndRI, index1, index2, mRows, &result)
+			analyseAndEncrypt(fstRI, sndRI, index1, index2, mRows, p.Matrix, &result)
 		}
 	} else if p.decrypt {
 		// decrypt the word
