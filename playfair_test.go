@@ -31,3 +31,23 @@ func TestPlayfaircipher(t *testing.T) {
 		}
 	}
 }
+
+func TestDecryption(t *testing.T) {
+	type wordKeyword struct {
+		keyword string
+		word    string
+	}
+	m := map[wordKeyword]string{
+		*(&wordKeyword{"monarchy", "IBSUPMNA"}):      "BALLOON",
+		*(&wordKeyword{"something", "MSGSUEINGA"}):   "OTHERTHING",
+		*(&wordKeyword{"hello world", "IRFAOLQYQY"}): "FAIRLESS",
+	}
+	for k, v := range m {
+		pf := cipherlogic.NewMtx(k.keyword, k.word, false, true)
+		pf.GenMatrix()
+		result := pf.EncOrDec()
+		if result != v {
+			t.Fail()
+		}
+	}
+}
