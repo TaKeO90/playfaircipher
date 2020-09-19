@@ -19,7 +19,7 @@ $ go build .
 $ ./playfaircipher -word <word to encrypt> -keyword <your keyword> -encrypt
 $ ./playfaircipher -word <word to decrypt> -keyword <your keyword> -decrypt
 ```
-*** To Run unit testing ***
+**To Run unit testing**
 - Run the command bellow from the root of the project .
 ```console
 $ go test
