@@ -8,8 +8,9 @@ const (
 	//MATRIXROWLEN the length of the matrix and the it's rows and columns
 	MATRIXROWLEN int = 5
 	//LETTERS the alphabet letters that we use for encrypting
-	LETTERS     string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	PLACEHOLDER        = "X"
+	LETTERS string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	//LETTER THAT IS USED TO BE THE PLACEHOLDER OF REPETITIVE LETTERS.
+	PLACEHOLDER = "X"
 )
 
 var (
