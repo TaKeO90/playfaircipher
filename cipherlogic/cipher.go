@@ -12,7 +12,10 @@ const (
 	PLACEHOLDER        = "X"
 )
 
-var endSpecialWords []string
+var (
+	endSpecialWords []string
+	isEncrypt       bool
+)
 
 //PfMatrix holds elements that we need for the encryption or decryption
 // or can help us figure out what the user need `encrypt or decrypt`
@@ -137,7 +140,7 @@ func wordToPairs(word string) (wList [][]string) {
 			wList = append(wList, str)
 		}
 		if i == len(word)-1 && wList[len(wList)-1][0] == fL && wList[len(wList)-1][1] == PLACEHOLDER {
-			endSpecialWords = append(endSpecialWords, PLACEHOLDER, fL) //instead of bool we need to get index then give it to the get intersection function.
+			endSpecialWords = append(endSpecialWords, PLACEHOLDER, fL)
 			wList = append(wList, []string{PLACEHOLDER, fL})
 		}
 	}
@@ -170,8 +173,6 @@ func getletterIndex(letter string, matrix [][]string) (rowIndex, index int) {
 }
 
 func findAndReport(pair []string, matrix [][]string) (fstRowIndex, sndRowIndex int, indx1, indx2 int) {
-	//var res []int
-	//var rowIndex []int
 	for b, w := range matrix {
 		index1, index2, found1, found2 := isIn(pair[0], pair[1], w)
 		if found1 {
@@ -196,9 +197,17 @@ func findAndReport(pair []string, matrix [][]string) (fstRowIndex, sndRowIndex i
 
 func analyseAndEncrypt(i, j, x, y int, mRows matrixRows, matrix [][]string, result *string) {
 	if i == j && x != y {
-		mRows.shiftToRight(i, x, y, result)
+		if isEncrypt {
+			mRows.shiftToRight(i, x, y, result)
+		} else {
+			mRows.shiftToLeft(i, x, y, result)
+		}
 	} else if i != j && x == y {
-		mRows.shiftToBottom(i, j, x, result)
+		if isEncrypt {
+			mRows.shiftToBottom(i, j, x, result)
+		} else {
+			mRows.shiftToUp(i, j, x, result)
+		}
 	} else if i != j && x != y {
 		mRows.getIntersection(matrix, i, j, x, y, result)
 	}
@@ -267,6 +276,21 @@ func (m matrixRows) shiftToRight(rowIndex, ind1, ind2 int, result *string) {
 	*result += m[rowIndex].row[rowIndex][ind2]
 }
 
+func (m matrixRows) shiftToLeft(rowIndex, ind1, ind2 int, result *string) {
+	if ind1 == 0 {
+		ind1 = MATRIXROWLEN - 1
+	} else {
+		ind1--
+	}
+	if ind2 == 0 {
+		ind2 = MATRIXROWLEN - 1
+	} else {
+		ind2--
+	}
+	*result += m[rowIndex].row[rowIndex][ind1]
+	*result += m[rowIndex].row[rowIndex][ind2]
+}
+
 func (m matrixRows) shiftToBottom(fstRowIndex, sndRowIndex, index int, result *string) {
 	if fstRowIndex == len(m)-1 {
 		fstRowIndex = 0
@@ -282,12 +306,22 @@ func (m matrixRows) shiftToBottom(fstRowIndex, sndRowIndex, index int, result *s
 	*result += m[sndRowIndex].row[sndRowIndex][index]
 }
 
+func (m matrixRows) shiftToUp(fstRowIndex, sndRowIndex, index int, result *string) {
+	if fstRowIndex == 0 {
+		fstRowIndex = MATRIXROWLEN - 1
+	} else {
+		fstRowIndex--
+	}
+	if sndRowIndex == 0 {
+		sndRowIndex = MATRIXROWLEN - 1
+	} else {
+		sndRowIndex--
+	}
+	*result += m[fstRowIndex].row[fstRowIndex][index]
+	*result += m[sndRowIndex].row[sndRowIndex][index]
+}
+
 func (m matrixRows) getIntersection(matrix [][]string, fstRowIndex, sndRowIndex, indx1, indx2 int, result *string) {
-	//	if placeholderB {
-	//		*result += m[sndRowIndex].row[sndRowIndex][indx1]
-	//		*result += m[fstRowIndex].row[fstRowIndex][indx2]
-	//		placeholderB = false
-	//	} else { 	findAndReport(pair []string, matrix [][]string) (fstRowIndex, sndRowIndex int, indx1, indx2 int)
 	if len(endSpecialWords) == 0 {
 		*result += m[fstRowIndex].row[fstRowIndex][indx2]
 		*result += m[sndRowIndex].row[sndRowIndex][indx1]
@@ -318,10 +352,27 @@ func (p *PfMatrix) GenMatrix() {
 	fillInTheBlank(index, check, strings.ToUpper(p.Keyword), &p.Matrix)
 }
 
+func decfinalCheck(result *string) {
+	for i, n := range *result {
+		if string(n) == PLACEHOLDER {
+			if i != len(*result)-1 {
+				if (*result)[i-1] == (*result)[i+1] {
+					*result = (*result)[:i] + (*result)[i+1:]
+				}
+			} else if i == len(*result)-1 {
+				if string(n) == PLACEHOLDER {
+					*result = (*result)[:i]
+				}
+			}
+		}
+	}
+}
+
 //EncOrDec encrypt or decrpyt user's word
 func (p *PfMatrix) EncOrDec() (result string) {
 	//Check if p.encrypt or p.decrypt
 	if p.encrypt {
+		isEncrypt = true
 		// encrypt the word
 		mRows := newRows(p.Matrix)
 		endword := wordToPairs(p.enOrdec)
@@ -330,8 +381,15 @@ func (p *PfMatrix) EncOrDec() (result string) {
 			analyseAndEncrypt(fstRI, sndRI, index1, index2, mRows, p.Matrix, &result)
 		}
 	} else if p.decrypt {
+		isEncrypt = false
 		// decrypt the word
-		result = ""
+		genMtx := newRows(p.Matrix)
+		encword := wordToPairs(p.enOrdec)
+		for _, n := range encword {
+			fstRI, sndRI, index1, index2 := findAndReport(n, p.Matrix)
+			analyseAndEncrypt(fstRI, sndRI, index1, index2, genMtx, p.Matrix, &result)
+			decfinalCheck(&result)
+		}
 	}
 	return
 }
