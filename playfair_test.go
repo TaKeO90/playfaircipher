@@ -25,7 +25,7 @@ func TestPlayfaircipher(t *testing.T) {
 		pf.GenMatrix()
 		result := pf.EncOrDec()
 		if result != cipherAns.encryptedWord {
-			t.Errorf("Encrpyted word doesn't equal what we expected %s != %s\n", result, cipherAns.encryptedWord)
+			t.Errorf("Encrypted word doesn't equal what we expected %s != %s\n", result, cipherAns.encryptedWord)
 		} else {
 			t.Logf("SUCCESS %s\n", result)
 		}
