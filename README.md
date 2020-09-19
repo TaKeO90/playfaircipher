@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/TaKeO90/playfaircipher)](https://goreportcard.com/report/github.com/TaKeO90/playfaircipher)
+
 # [playfair cipher](https://en.wikipedia.org/wiki/Playfair_cipher)
 
 # ROAD MAP
